@@ -1,101 +1,137 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import Form from "next/form";
+import React from "react";
+
+export default function AppForm() {
+  const [progress, setProgress] = React.useState(0);
+  const [results, setResults] = React.useState<{
+    sum: number | null;
+    difference: number | null;
+    product: number | null;
+    division: number | null;
+  }>({
+    sum: null,
+    difference: null,
+    product: null,
+    division: null,
+  });
+
+  // Frontend "Mock" computation
+  const computeResults = (formData: FormData) => {
+    // Reset results
+    setResults({
+      sum: null,
+      difference: null,
+      product: null,
+      division: null,
+    });
+
+    setProgress(0);
+    const a = parseFloat(formData.get("numberA") as string);
+    const b = parseFloat(formData.get("numberB") as string);
+
+    // First calculation (immediate)
+    setProgress(25);
+    setResults((prev) => ({
+      ...prev,
+      sum: a + b,
+    }));
+
+    // Second calculation (after 3s)
+    setTimeout(() => {
+      setProgress(50);
+      setResults((prev) => ({
+        ...prev,
+        difference: a - b,
+      }));
+
+      // Third calculation (after 6s)
+      setTimeout(() => {
+        setProgress(75);
+        setResults((prev) => ({
+          ...prev,
+          product: a * b,
+        }));
+
+        // Fourth calculation (after 9s)
+        setTimeout(() => {
+          setProgress(100);
+          setResults((prev) => ({
+            ...prev,
+            division: a / b,
+          }));
+        }, 3000);
+      }, 3000);
+    }, 3000);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <main className="min-h-screen bg-white p-8">
+      <div className="max-w-2xl mx-auto space-y-8 pt-12">
+        <Form action={computeResults}>
+          <div className="flex gap-8 items-center justify-center">
+            <Input
+              placeholder="Enter number A"
+              type="number"
+              className="w-48"
+              name="numberA"
+              required
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <Input
+              placeholder="Enter number B"
+              type="number"
+              className="w-48"
+              name="numberB"
+              required
+            />
+            <Button className="bg-blue-600 hover:bg-blue-700">Compute</Button>
+          </div>
+        </Form>
+
+        {progress > 0 && (
+          <div className="flex flex-col justify-center space-y-4">
+            <div className="text-center text-sm text-gray-600">
+              Computing... {Math.floor(progress / 25)} out of 4 jobs finished
+            </div>
+
+            <Progress value={progress} className="h-2 w-96 mx-auto" />
+
+            {/* Results box. Prevents layout shift when results are computed */}
+            <div className="flex justify-center">
+              <div className="space-y-2 text-left pt-4 p-4 min-w-fit font-mono">
+                <div className="flex whitespace-nowrap">
+                  <div className="w-24 text-right shrink-0">A + B = </div>
+                  <div className="ml-2 min-w-[100px]">
+                    {results.sum ?? "Computing..."}
+                  </div>
+                </div>
+                <div className="flex whitespace-nowrap">
+                  <div className="w-24 text-right shrink-0">A - B = </div>
+                  <div className="ml-2 min-w-[100px]">
+                    {results.difference ?? "Computing..."}
+                  </div>
+                </div>
+                <div className="flex whitespace-nowrap">
+                  <div className="w-24 text-right shrink-0">A * B = </div>
+                  <div className="ml-2 min-w-[100px]">
+                    {results.product ?? "Computing..."}
+                  </div>
+                </div>
+                <div className="flex whitespace-nowrap">
+                  <div className="w-24 text-right shrink-0">A / B = </div>
+                  <div className="ml-2 min-w-[100px]">
+                    {results.division ?? "Computing..."}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

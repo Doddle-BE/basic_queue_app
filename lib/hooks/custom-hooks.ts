@@ -15,11 +15,10 @@ export const useSSE = (url: string) => {
       eventSourceRef.current.close();
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    console.log("baseUrl", baseUrl);
-
     const eventSource = new EventSource(
-      `${baseUrl}${url.startsWith("/") ? url : `/${url}`}`
+      `${process.env.NEXT_PUBLIC_BASE_URL}${
+        url.startsWith("/") ? url : `/${url}`
+      }`
     );
     eventSourceRef.current = eventSource;
 

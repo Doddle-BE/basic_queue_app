@@ -1,78 +1,97 @@
 "use client";
 
+import React from "react";
+import Form from "next/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import Form from "next/form";
-import React from "react";
+import { submitCalculation } from "@/app/server/actions";
+import { flushSync } from "react-dom";
+import { useSSE } from "@/lib/hooks/custom-hooks";
 
 export default function AppForm() {
-  const [progress, setProgress] = React.useState(0);
+  const { messages } = useSSE("/api/progress");
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const [results, setResults] = React.useState<{
-    sum: number | null;
-    difference: number | null;
-    product: number | null;
-    division: number | null;
+    sum: {
+      result: number | null;
+      status: "idle" | "computing" | "completed" | "error";
+    };
+    difference: {
+      result: number | null;
+      status: "idle" | "computing" | "completed" | "error";
+    };
+    product: {
+      result: number | null;
+      status: "idle" | "computing" | "completed" | "error";
+    };
+    division: {
+      result: number | null;
+      status: "idle" | "computing" | "completed" | "error";
+    };
   }>({
-    sum: null,
-    difference: null,
-    product: null,
-    division: null,
+    sum: { result: null, status: "idle" },
+    difference: { result: null, status: "idle" },
+    product: { result: null, status: "idle" },
+    division: { result: null, status: "idle" },
   });
 
-  // Frontend "Mock" computation
-  const computeResults = (formData: FormData) => {
-    // Reset results
-    setResults({
-      sum: null,
-      difference: null,
-      product: null,
-      division: null,
-    });
+  // Calculate progress based on completed results
+  const progress = React.useMemo(() => {
+    const completedCount = Object.values(results).filter(
+      (r) => r.status === "completed"
+    ).length;
+    return completedCount * 25;
+    // It's not necessary to include the "results"-object in the dependency array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    results.sum.status,
+    results.difference.status,
+    results.product.status,
+    results.division.status,
+  ]);
 
-    setProgress(0);
-    const a = parseFloat(formData.get("numberA") as string);
-    const b = parseFloat(formData.get("numberB") as string);
+  React.useEffect(() => {
+    if (Object.keys(messages).length > 0) {
+      setResults((prev) => {
+        return {
+          ...prev,
+          ...messages,
+        };
+      });
+    }
+  }, [messages]);
 
-    // First calculation (immediate)
-    setProgress(25);
-    setResults((prev) => ({
-      ...prev,
-      sum: a + b,
-    }));
-
-    // Second calculation (after 3s)
-    setTimeout(() => {
-      setProgress(50);
-      setResults((prev) => ({
-        ...prev,
-        difference: a - b,
-      }));
-
-      // Third calculation (after 6s)
-      setTimeout(() => {
-        setProgress(75);
+  async function handleSubmit(formData: FormData) {
+    try {
+      // flushSync is used to ensure that results are updated before they will be changed again by the SSE
+      // use flushSync with caution, it can cause performance issues if not used properly
+      flushSync(() => {
         setResults((prev) => ({
           ...prev,
-          product: a * b,
+          sum: { result: null, status: "computing" },
+          difference: { result: null, status: "computing" },
+          product: { result: null, status: "computing" },
+          division: { result: null, status: "computing" },
         }));
+        setIsLoading(true);
+        setError(null);
+      });
 
-        // Fourth calculation (after 9s)
-        setTimeout(() => {
-          setProgress(100);
-          setResults((prev) => ({
-            ...prev,
-            division: a / b,
-          }));
-        }, 3000);
-      }, 3000);
-    }, 3000);
-  };
+      await submitCalculation(formData);
+    } catch (err) {
+      setError("Failed to submit calculations");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-white p-8">
       <div className="max-w-2xl mx-auto space-y-8 pt-12">
-        <Form action={computeResults}>
+        <Form action={handleSubmit}>
           <div className="flex gap-8 items-center justify-center">
             <Input
               placeholder="Enter number A"
@@ -80,6 +99,7 @@ export default function AppForm() {
               className="w-48"
               name="numberA"
               required
+              disabled={isLoading}
             />
             <Input
               placeholder="Enter number B"
@@ -87,12 +107,24 @@ export default function AppForm() {
               className="w-48"
               name="numberB"
               required
+              disabled={isLoading}
             />
-            <Button className="bg-blue-600 hover:bg-blue-700">Compute</Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
+            >
+              {isLoading ? "Computing..." : "Compute"}
+            </Button>
           </div>
         </Form>
 
-        {progress > 0 && (
+        {error && <div className="text-red-500 text-center">{error}</div>}
+
+        {(progress > 0 ||
+          results.sum.status === "computing" ||
+          results.difference.status === "computing" ||
+          results.product.status === "computing" ||
+          results.division.status === "computing") && (
           <div className="flex flex-col justify-center space-y-4">
             <div className="text-center text-sm text-gray-600">
               Computing... {Math.floor(progress / 25)} out of 4 jobs finished
@@ -106,25 +138,33 @@ export default function AppForm() {
                 <div className="flex whitespace-nowrap">
                   <div className="w-24 text-right shrink-0">A + B = </div>
                   <div className="ml-2 min-w-[100px]">
-                    {results.sum ?? "Computing..."}
+                    {results.sum.status === "computing"
+                      ? "Computing..."
+                      : results.sum.result}
                   </div>
                 </div>
                 <div className="flex whitespace-nowrap">
                   <div className="w-24 text-right shrink-0">A - B = </div>
                   <div className="ml-2 min-w-[100px]">
-                    {results.difference ?? "Computing..."}
+                    {results.difference.status === "computing"
+                      ? "Computing..."
+                      : results.difference.result}
                   </div>
                 </div>
                 <div className="flex whitespace-nowrap">
                   <div className="w-24 text-right shrink-0">A * B = </div>
                   <div className="ml-2 min-w-[100px]">
-                    {results.product ?? "Computing..."}
+                    {results.product.status === "computing"
+                      ? "Computing..."
+                      : results.product.result}
                   </div>
                 </div>
                 <div className="flex whitespace-nowrap">
                   <div className="w-24 text-right shrink-0">A / B = </div>
                   <div className="ml-2 min-w-[100px]">
-                    {results.division ?? "Computing..."}
+                    {results.division.status === "computing"
+                      ? "Computing..."
+                      : results.division.result}
                   </div>
                 </div>
               </div>

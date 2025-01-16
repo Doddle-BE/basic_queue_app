@@ -1,12 +1,46 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
-export async function compute(formData: FormData) {
-  const numberA = formData.get("numberA");
-  const numberB = formData.get("numberB");
-  const result = Number(numberA) + Number(numberB);
-  console.log(result);
+export async function submitCalculation(formData: FormData) {
+  const numberA = parseFloat(formData.get("numberA") as string);
+  const numberB = parseFloat(formData.get("numberB") as string);
 
-  redirect("/");
+  // check if the numbers are valid
+  if (isNaN(numberA) || isNaN(numberB)) {
+    throw new Error("Invalid numbers");
+  }
+
+  // Create all four calculations as separate jobs
+  const operations = ["sum", "difference", "product", "division"];
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .insert(
+      operations.map((operation) => ({
+        operation,
+        number_a: numberA,
+        number_b: numberB,
+        status: "pending",
+      }))
+    )
+    .select();
+
+  if (error) {
+    console.error("Error creating jobs:", error);
+    throw error;
+  }
+
+  // Trigger the worker for each specific job
+  for (const job of data) {
+    await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/worker`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ jobId: job.id }),
+    });
+  }
+
+  return { success: true };
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { baseUrl } from "../constants";
 
 export const useSSE = (url: string) => {
   const [isConnected, setIsConnected] = React.useState(false);
@@ -16,9 +17,7 @@ export const useSSE = (url: string) => {
     }
 
     const eventSource = new EventSource(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${
-        url.startsWith("/") ? url : `/${url}`
-      }`
+      `${baseUrl}${url.startsWith("/") ? url : `/${url}`}`
     );
     eventSourceRef.current = eventSource;
 

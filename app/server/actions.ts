@@ -1,5 +1,6 @@
 "use server";
 
+import { baseUrl } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import { DB_JOB_STATUS, JOB_OPERATION, JobOperationType } from "@/types";
 
@@ -39,7 +40,7 @@ export async function submitCalculation(formData: FormData) {
 
   // Trigger the worker for each specific job
   for (const job of data) {
-    await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/worker`, {
+    await fetch(`${baseUrl}/api/worker`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

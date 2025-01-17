@@ -1,46 +1,30 @@
 "use client";
 
-import React from "react";
-import Form from "next/form";
+import { submitCalculation } from "@/app/server/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { submitCalculation } from "@/app/server/actions";
-import { flushSync } from "react-dom";
 import { useSSE } from "@/lib/hooks/custom-hooks";
+import { CalculationResults, JOB_STATUS } from "@/types";
+import Form from "next/form";
+import React from "react";
+import { flushSync } from "react-dom";
 
 export default function AppForm() {
   const { messages } = useSSE("/api/progress");
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [results, setResults] = React.useState<{
-    sum: {
-      result: number | null;
-      status: "idle" | "computing" | "completed" | "error";
-    };
-    difference: {
-      result: number | null;
-      status: "idle" | "computing" | "completed" | "error";
-    };
-    product: {
-      result: number | null;
-      status: "idle" | "computing" | "completed" | "error";
-    };
-    division: {
-      result: number | null;
-      status: "idle" | "computing" | "completed" | "error";
-    };
-  }>({
-    sum: { result: null, status: "idle" },
-    difference: { result: null, status: "idle" },
-    product: { result: null, status: "idle" },
-    division: { result: null, status: "idle" },
+  const [results, setResults] = React.useState<CalculationResults>({
+    sum: { result: null, status: JOB_STATUS.IDLE },
+    difference: { result: null, status: JOB_STATUS.IDLE },
+    product: { result: null, status: JOB_STATUS.IDLE },
+    division: { result: null, status: JOB_STATUS.IDLE },
   });
 
   // Calculate progress based on completed results
   const progress = React.useMemo(() => {
     const completedCount = Object.values(results).filter(
-      (r) => r.status === "completed"
+      (r) => r.status === JOB_STATUS.COMPLETED
     ).length;
     return completedCount * 25;
     // It's not necessary to include the "results"-object in the dependency array
@@ -70,10 +54,10 @@ export default function AppForm() {
       flushSync(() => {
         setResults((prev) => ({
           ...prev,
-          sum: { result: null, status: "computing" },
-          difference: { result: null, status: "computing" },
-          product: { result: null, status: "computing" },
-          division: { result: null, status: "computing" },
+          sum: { result: null, status: JOB_STATUS.COMPUTING },
+          difference: { result: null, status: JOB_STATUS.COMPUTING },
+          product: { result: null, status: JOB_STATUS.COMPUTING },
+          division: { result: null, status: JOB_STATUS.COMPUTING },
         }));
         setIsLoading(true);
         setError(null);

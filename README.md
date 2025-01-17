@@ -2,7 +2,7 @@
 
 ```sql
 -- Create job status and operation types
-create type job_status as enum ('pending', 'processing', 'completed');
+create type job_status as enum ('pending', 'processing', 'completed', 'failed');
 create type operation_type as enum ('sum', 'difference', 'product', 'division');
 
 -- Create the jobs table

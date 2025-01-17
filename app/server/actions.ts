@@ -1,6 +1,7 @@
 "use server";
 
 import { supabase } from "@/lib/supabase";
+import { DB_JOB_STATUS, JOB_OPERATION, JobOperationType } from "@/types";
 
 export async function submitCalculation(formData: FormData) {
   const numberA = parseFloat(formData.get("numberA") as string);
@@ -12,7 +13,12 @@ export async function submitCalculation(formData: FormData) {
   }
 
   // Create all four calculations as separate jobs
-  const operations = ["sum", "difference", "product", "division"];
+  const operations: JobOperationType[] = [
+    JOB_OPERATION.SUM,
+    JOB_OPERATION.DIFFERENCE,
+    JOB_OPERATION.PRODUCT,
+    JOB_OPERATION.DIVISION,
+  ];
 
   const { data, error } = await supabase
     .from("jobs")
@@ -21,7 +27,7 @@ export async function submitCalculation(formData: FormData) {
         operation,
         number_a: numberA,
         number_b: numberB,
-        status: "pending",
+        status: DB_JOB_STATUS.PENDING,
       }))
     )
     .select();

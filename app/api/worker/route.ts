@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
+import { DB_JOB_STATUS, Job, JOB_OPERATION } from "@/types";
 import { NextResponse } from "next/server";
+import * as openai from "@/lib/openai";
 
 /**
  * Worker endpoint that processes mathematical calculations asynchronously
@@ -20,7 +22,7 @@ import { NextResponse } from "next/server";
  * @returns {Promise<NextResponse>} JSON response with the calculation result or error details
  */
 export async function POST(request: Request) {
-  let job;
+  let job: Job | null = null;
 
   try {
     // Get the jobId from the request body
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
     // Mark job as processing
     await supabase
       .from("jobs")
-      .update({ status: "processing" })
+      .update({ status: DB_JOB_STATUS.PROCESSING })
       .eq("id", job.id);
 
     // Simulate processing time (3 seconds)
@@ -58,17 +60,33 @@ export async function POST(request: Request) {
     // Calculate result
     let result: number;
     switch (job.operation) {
-      case "sum":
-        result = job.number_a + job.number_b;
+      case JOB_OPERATION.SUM:
+        result = await openai.doCalculation({
+          number_a: job.number_a,
+          number_b: job.number_b,
+          operation: job.operation,
+        });
         break;
-      case "difference":
-        result = job.number_a - job.number_b;
+      case JOB_OPERATION.DIFFERENCE:
+        result = await openai.doCalculation({
+          number_a: job.number_a,
+          number_b: job.number_b,
+          operation: job.operation,
+        });
         break;
-      case "product":
-        result = job.number_a * job.number_b;
+      case JOB_OPERATION.PRODUCT:
+        result = await openai.doCalculation({
+          number_a: job.number_a,
+          number_b: job.number_b,
+          operation: job.operation,
+        });
         break;
-      case "division":
-        result = job.number_a / job.number_b;
+      case JOB_OPERATION.DIVISION:
+        result = await openai.doCalculation({
+          number_a: job.number_a,
+          number_b: job.number_b,
+          operation: job.operation,
+        });
         break;
       default:
         throw new Error("Invalid operation");
@@ -78,7 +96,7 @@ export async function POST(request: Request) {
     await supabase
       .from("jobs")
       .update({
-        status: "completed",
+        status: DB_JOB_STATUS.COMPLETED,
         result,
       })
       .eq("id", job.id);
@@ -92,7 +110,7 @@ export async function POST(request: Request) {
       await supabase
         .from("jobs")
         .update({
-          status: "failed",
+          status: DB_JOB_STATUS.FAILED,
           result: null,
         })
         .eq("id", job.id);

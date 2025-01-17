@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { DB_JOB_STATUS, JOB_STATUS } from "@/types";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -29,14 +30,14 @@ export async function GET() {
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "jobs" },
           (payload) => {
-            if (payload.new.status === "completed") {
+            if (payload.new.status === DB_JOB_STATUS.COMPLETED) {
               // The double newline sequence (\n\n) is the standard delimiter that tells the client where one SSE message ends and the next begins.
               controller.enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({
                     [payload.new.operation]: {
                       result: payload.new.result,
-                      status: "completed",
+                      status: JOB_STATUS.COMPLETED,
                     },
                   })}\n\n`
                 )

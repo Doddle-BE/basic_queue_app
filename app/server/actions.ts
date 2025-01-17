@@ -3,6 +3,17 @@
 import { baseUrl } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import { DB_JOB_STATUS, JOB_OPERATION, JobOperationType } from "@/types";
+import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
+import type { AppRouter } from "@/server/root";
+
+// Create a tRPC client that can be used in server actions
+const trpc = createTRPCProxyClient<AppRouter>({
+  links: [
+    httpBatchLink({
+      url: `${baseUrl}/api/trpc`,
+    }),
+  ],
+});
 
 export async function submitCalculation(formData: FormData) {
   const numberA = parseFloat(formData.get("numberA") as string);
@@ -38,16 +49,13 @@ export async function submitCalculation(formData: FormData) {
     throw error;
   }
 
-  // Trigger the worker for each specific job
+  // Get the job IDs
+  const jobIds = data.map((job) => job.id);
+
+  // Trigger the worker for each specific job using tRPC
   for (const job of data) {
-    await fetch(`${baseUrl}/api/worker`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ jobId: job.id }),
-    });
+    await trpc.calculations.processJob.mutate({ jobId: job.id });
   }
 
-  return { success: true };
+  return { success: true, jobIds };
 }

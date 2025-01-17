@@ -4,22 +4,16 @@ import { submitCalculation } from "@/app/server/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { useSSE } from "@/lib/hooks/custom-hooks";
-import { CalculationResults, JOB_STATUS } from "@/types";
+import { useCalculationUpdates } from "@/lib/hooks/use-calculation-updates";
+import { JOB_STATUS } from "@/types";
 import Form from "next/form";
 import React from "react";
 import { flushSync } from "react-dom";
 
 export default function AppForm() {
-  const { messages } = useSSE("/api/progress");
+  const { results, setComputing } = useCalculationUpdates();
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [results, setResults] = React.useState<CalculationResults>({
-    sum: { result: null, status: JOB_STATUS.IDLE },
-    difference: { result: null, status: JOB_STATUS.IDLE },
-    product: { result: null, status: JOB_STATUS.IDLE },
-    division: { result: null, status: JOB_STATUS.IDLE },
-  });
 
   // Calculate progress based on completed results
   const progress = React.useMemo(() => {
@@ -27,8 +21,6 @@ export default function AppForm() {
       (r) => r.status === JOB_STATUS.COMPLETED
     ).length;
     return completedCount * 25;
-    // It's not necessary to include the "results"-object in the dependency array
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     results.sum.status,
     results.difference.status,
@@ -36,34 +28,16 @@ export default function AppForm() {
     results.division.status,
   ]);
 
-  React.useEffect(() => {
-    if (Object.keys(messages).length > 0) {
-      setResults((prev) => {
-        return {
-          ...prev,
-          ...messages,
-        };
-      });
-    }
-  }, [messages]);
-
   async function handleSubmit(formData: FormData) {
     try {
-      // flushSync is used to ensure that results are updated before they will be changed again by the SSE
-      // use flushSync with caution, it can cause performance issues if not used properly
+      // flushSync is used to ensure that results are updated before they will be changed again by polling
       flushSync(() => {
-        setResults((prev) => ({
-          ...prev,
-          sum: { result: null, status: JOB_STATUS.COMPUTING },
-          difference: { result: null, status: JOB_STATUS.COMPUTING },
-          product: { result: null, status: JOB_STATUS.COMPUTING },
-          division: { result: null, status: JOB_STATUS.COMPUTING },
-        }));
         setIsLoading(true);
         setError(null);
       });
 
-      await submitCalculation(formData);
+      const { jobIds } = await submitCalculation(formData);
+      setComputing(jobIds);
     } catch (err) {
       setError("Failed to submit calculations");
       console.error(err);
@@ -136,7 +110,7 @@ export default function AppForm() {
                   </div>
                 </div>
                 <div className="flex whitespace-nowrap">
-                  <div className="w-24 text-right shrink-0">A * B = </div>
+                  <div className="w-24 text-right shrink-0">A × B = </div>
                   <div className="ml-2 min-w-[100px]">
                     {results.product.status === "computing"
                       ? "Computing..."
@@ -144,7 +118,7 @@ export default function AppForm() {
                   </div>
                 </div>
                 <div className="flex whitespace-nowrap">
-                  <div className="w-24 text-right shrink-0">A / B = </div>
+                  <div className="w-24 text-right shrink-0">A ÷ B = </div>
                   <div className="ml-2 min-w-[100px]">
                     {results.division.status === "computing"
                       ? "Computing..."

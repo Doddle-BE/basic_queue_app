@@ -58,39 +58,15 @@ export async function POST(request: Request) {
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // Calculate result
-    let result: number;
-    switch (job.operation) {
-      case JOB_OPERATION.SUM:
-        result = await openai.doCalculation({
-          number_a: job.number_a,
-          number_b: job.number_b,
-          operation: job.operation,
-        });
-        break;
-      case JOB_OPERATION.DIFFERENCE:
-        result = await openai.doCalculation({
-          number_a: job.number_a,
-          number_b: job.number_b,
-          operation: job.operation,
-        });
-        break;
-      case JOB_OPERATION.PRODUCT:
-        result = await openai.doCalculation({
-          number_a: job.number_a,
-          number_b: job.number_b,
-          operation: job.operation,
-        });
-        break;
-      case JOB_OPERATION.DIVISION:
-        result = await openai.doCalculation({
-          number_a: job.number_a,
-          number_b: job.number_b,
-          operation: job.operation,
-        });
-        break;
-      default:
-        throw new Error("Invalid operation");
+    if (!Object.values(JOB_OPERATION).includes(job.operation)) {
+      throw new Error("Invalid operation");
     }
+
+    const result = await openai.doCalculation({
+      number_a: job.number_a,
+      number_b: job.number_b,
+      operation: job.operation,
+    });
 
     // Update job with result
     await supabase

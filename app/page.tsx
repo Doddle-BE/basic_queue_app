@@ -9,6 +9,7 @@ import { CalculationResults, JOB_STATUS } from "@/types";
 import Form from "next/form";
 import React from "react";
 import { flushSync } from "react-dom";
+import { CalculationResultRow } from "./components/CalculationResultRow";
 
 export default function AppForm() {
   const { messages } = useSSE("/api/progress");
@@ -119,38 +120,21 @@ export default function AppForm() {
             {/* Results box. Prevents layout shift when results are computed */}
             <div className="flex justify-center">
               <div className="space-y-2 text-left pt-4 p-4 min-w-fit font-mono">
-                <div className="flex whitespace-nowrap">
-                  <div className="w-24 text-right shrink-0">A + B = </div>
-                  <div className="ml-2 min-w-[100px]">
-                    {results.sum.status === "computing"
-                      ? "Computing..."
-                      : results.sum.result}
-                  </div>
-                </div>
-                <div className="flex whitespace-nowrap">
-                  <div className="w-24 text-right shrink-0">A - B = </div>
-                  <div className="ml-2 min-w-[100px]">
-                    {results.difference.status === "computing"
-                      ? "Computing..."
-                      : results.difference.result}
-                  </div>
-                </div>
-                <div className="flex whitespace-nowrap">
-                  <div className="w-24 text-right shrink-0">A * B = </div>
-                  <div className="ml-2 min-w-[100px]">
-                    {results.product.status === "computing"
-                      ? "Computing..."
-                      : results.product.result}
-                  </div>
-                </div>
-                <div className="flex whitespace-nowrap">
-                  <div className="w-24 text-right shrink-0">A / B = </div>
-                  <div className="ml-2 min-w-[100px]">
-                    {results.division.status === "computing"
-                      ? "Computing..."
-                      : results.division.result}
-                  </div>
-                </div>
+                {Object.entries(results).map(([key, result]) => (
+                  <CalculationResultRow
+                    key={key}
+                    operation={`A ${
+                      key === "sum"
+                        ? "+"
+                        : key === "difference"
+                        ? "-"
+                        : key === "product"
+                        ? "*"
+                        : "/"
+                    } B`}
+                    result={result}
+                  />
+                ))}
               </div>
             </div>
           </div>

@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { submitCalculation } from "@/app/server/actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { useSSE } from "@/lib/hooks/custom-hooks";
-import { CalculationResults, JOB_STATUS } from "@/types";
-import Form from "next/form";
-import React from "react";
-import { flushSync } from "react-dom";
-import { CalculationResultRow } from "./components/CalculationResultRow";
+import { submitCalculation } from '@/app/server/actions';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { useSSE } from '@/lib/hooks/custom-hooks';
+import { type CalculationResults, JOB_STATUS } from '@/types';
+import Form from 'next/form';
+import React from 'react';
+import { flushSync } from 'react-dom';
+import { CalculationResultRow } from './components/CalculationResultRow';
 
 export default function AppForm() {
-  const { messages } = useSSE("/api/progress");
+  const { messages } = useSSE('/api/progress');
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [results, setResults] = React.useState<CalculationResults>({
@@ -23,19 +23,13 @@ export default function AppForm() {
   });
 
   // Calculate progress based on completed results
+  // biome-ignore lint/correctness/useExhaustiveDependencies: it's not necessary to include the results object in the dependency array
   const progress = React.useMemo(() => {
     const completedCount = Object.values(results).filter(
-      (r) => r.status === JOB_STATUS.COMPLETED
+      (r) => r.status === JOB_STATUS.COMPLETED,
     ).length;
     return completedCount * 25;
-    // It's not necessary to include the "results"-object in the dependency array
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    results.sum.status,
-    results.difference.status,
-    results.product.status,
-    results.division.status,
-  ]);
+  }, [Object.values(results).map((r) => r.status)]);
 
   React.useEffect(() => {
     if (Object.keys(messages).length > 0) {
@@ -66,7 +60,7 @@ export default function AppForm() {
 
       await submitCalculation(formData);
     } catch (err) {
-      setError("Failed to submit calculations");
+      setError('Failed to submit calculations');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -94,11 +88,8 @@ export default function AppForm() {
               required
               disabled={isLoading}
             />
-            <Button
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={isLoading}
-            >
-              {isLoading ? "Computing..." : "Compute"}
+            <Button className="bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+              {isLoading ? 'Computing...' : 'Compute'}
             </Button>
           </div>
         </Form>
@@ -106,10 +97,10 @@ export default function AppForm() {
         {error && <div className="text-red-500 text-center">{error}</div>}
 
         {(progress > 0 ||
-          results.sum.status === "computing" ||
-          results.difference.status === "computing" ||
-          results.product.status === "computing" ||
-          results.division.status === "computing") && (
+          results.sum.status === 'computing' ||
+          results.difference.status === 'computing' ||
+          results.product.status === 'computing' ||
+          results.division.status === 'computing') && (
           <div className="flex flex-col justify-center space-y-4">
             <div className="text-center text-sm text-gray-600">
               Computing... {Math.floor(progress / 25)} out of 4 jobs finished
@@ -124,13 +115,13 @@ export default function AppForm() {
                   <CalculationResultRow
                     key={key}
                     operation={`A ${
-                      key === "sum"
-                        ? "+"
-                        : key === "difference"
-                        ? "-"
-                        : key === "product"
-                        ? "*"
-                        : "/"
+                      key === 'sum'
+                        ? '+'
+                        : key === 'difference'
+                          ? '-'
+                          : key === 'product'
+                            ? '*'
+                            : '/'
                     } B`}
                     result={result}
                   />

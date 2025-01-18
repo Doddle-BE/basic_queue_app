@@ -1,7 +1,7 @@
-import { supabase } from "@/lib/supabase";
-import { DB_JOB_STATUS, Job, JOB_OPERATION } from "@/types";
-import { NextResponse } from "next/server";
-import * as openai from "@/lib/openai";
+import { supabase } from '@/lib/supabase';
+import { DB_JOB_STATUS, type Job, JOB_OPERATION } from '@/types';
+import { NextResponse } from 'next/server';
+import * as openai from '@/lib/openai';
 
 /**
  * Worker endpoint that processes mathematical calculations asynchronously
@@ -29,37 +29,27 @@ export async function POST(request: Request) {
     const { jobId } = await request.json();
 
     if (!jobId) {
-      return NextResponse.json(
-        { error: "No job ID provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No job ID provided' }, { status: 400 });
     }
 
     // Get the specific job
-    const { data: fetchedJob } = await supabase
-      .from("jobs")
-      .select()
-      .eq("id", jobId)
-      .single();
+    const { data: fetchedJob } = await supabase.from('jobs').select().eq('id', jobId).single();
 
     job = fetchedJob;
 
     if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     // Mark job as processing
-    await supabase
-      .from("jobs")
-      .update({ status: DB_JOB_STATUS.PROCESSING })
-      .eq("id", job.id);
+    await supabase.from('jobs').update({ status: DB_JOB_STATUS.PROCESSING }).eq('id', job.id);
 
     // Simulate processing time (3 seconds)
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // Calculate result
     if (!Object.values(JOB_OPERATION).includes(job.operation)) {
-      throw new Error("Invalid operation");
+      throw new Error('Invalid operation');
     }
 
     const result = await openai.doCalculation({
@@ -70,31 +60,28 @@ export async function POST(request: Request) {
 
     // Update job with result
     await supabase
-      .from("jobs")
+      .from('jobs')
       .update({
         status: DB_JOB_STATUS.COMPLETED,
         result,
       })
-      .eq("id", job.id);
+      .eq('id', job.id);
 
-    return NextResponse.json({ message: "Job completed", result });
+    return NextResponse.json({ message: 'Job completed', result });
   } catch (error) {
-    console.error("Worker error:", error);
+    console.error('Worker error:', error);
 
     // If we have a job ID, mark it as failed
     if (job?.id) {
       await supabase
-        .from("jobs")
+        .from('jobs')
         .update({
           status: DB_JOB_STATUS.FAILED,
           result: null,
         })
-        .eq("id", job.id);
+        .eq('id', job.id);
     }
 
-    return NextResponse.json(
-      { error: "Job processing failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Job processing failed' }, { status: 500 });
   }
 }

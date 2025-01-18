@@ -1,16 +1,16 @@
-"use server";
+'use server';
 
-import { baseUrl } from "@/lib/constants";
-import { supabase } from "@/lib/supabase";
-import { DB_JOB_STATUS, JOB_OPERATION, JobOperationType } from "@/types";
+import { baseUrl } from '@/lib/constants';
+import { supabase } from '@/lib/supabase';
+import { DB_JOB_STATUS, JOB_OPERATION, type JobOperationType } from '@/types';
 
 export async function submitCalculation(formData: FormData) {
-  const numberA = parseFloat(formData.get("numberA") as string);
-  const numberB = parseFloat(formData.get("numberB") as string);
+  const numberA = Number.parseFloat(formData.get('numberA') as string);
+  const numberB = Number.parseFloat(formData.get('numberB') as string);
 
   // check if the numbers are valid
-  if (isNaN(numberA) || isNaN(numberB)) {
-    throw new Error("Invalid numbers");
+  if (Number.isNaN(numberA) || Number.isNaN(numberB)) {
+    throw new Error('Invalid numbers');
   }
 
   // Create all four calculations as separate jobs
@@ -22,28 +22,28 @@ export async function submitCalculation(formData: FormData) {
   ];
 
   const { data, error } = await supabase
-    .from("jobs")
+    .from('jobs')
     .insert(
       operations.map((operation) => ({
         operation,
         number_a: numberA,
         number_b: numberB,
         status: DB_JOB_STATUS.PENDING,
-      }))
+      })),
     )
     .select();
 
   if (error) {
-    console.error("Error creating jobs:", error);
+    console.error('Error creating jobs:', error);
     throw error;
   }
 
   // Trigger the worker for each specific job
   for (const job of data) {
     await fetch(`${baseUrl}/api/worker`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({ jobId: job.id }),
     });

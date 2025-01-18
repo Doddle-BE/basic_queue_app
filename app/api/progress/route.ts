@@ -1,8 +1,8 @@
-import { supabase } from "@/lib/supabase";
-import { DB_JOB_STATUS, JOB_STATUS } from "@/types";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import { supabase } from '@/lib/supabase';
+import { DB_JOB_STATUS, JOB_STATUS } from '@/types';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 /**
  * Server-Sent Events (SSE) endpoint that streams job completion updates to clients
@@ -25,26 +25,22 @@ export async function GET() {
   const customReadable = new ReadableStream({
     async start(controller) {
       channel = supabase
-        .channel("jobs")
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "jobs" },
-          (payload) => {
-            if (payload.new.status === DB_JOB_STATUS.COMPLETED) {
-              // The double newline sequence (\n\n) is the standard delimiter that tells the client where one SSE message ends and the next begins.
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({
-                    [payload.new.operation]: {
-                      result: payload.new.result,
-                      status: JOB_STATUS.COMPLETED,
-                    },
-                  })}\n\n`
-                )
-              );
-            }
+        .channel('jobs')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jobs' }, (payload) => {
+          if (payload.new.status === DB_JOB_STATUS.COMPLETED) {
+            // The double newline sequence (\n\n) is the standard delimiter that tells the client where one SSE message ends and the next begins.
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  [payload.new.operation]: {
+                    result: payload.new.result,
+                    status: JOB_STATUS.COMPLETED,
+                  },
+                })}\n\n`,
+              ),
+            );
           }
-        )
+        })
         .subscribe();
     },
     cancel() {
@@ -56,12 +52,12 @@ export async function GET() {
 
   return new Response(customReadable, {
     headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
 }

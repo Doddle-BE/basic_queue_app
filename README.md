@@ -29,7 +29,7 @@ A Next.js application that demonstrates a basic queuing system for mathematical 
 
 ```bash
 git clone <your-repo-url>
-cd structize_basic_queue_app
+cd basic_queue_app
 ```
 
 2. Install dependencies:

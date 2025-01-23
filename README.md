@@ -1,18 +1,32 @@
 # 🧮 Basic Queue App
 
-A Next.js application that demonstrates a basic queuing system for mathematical operations using Supabase as the backend database.
+A Turborepo monorepo application that demonstrates a basic queuing system for mathematical operations using tRPC for type-safe API communication and Supabase as the backend database.
+
+## Project Structure
+
+```
+├── apps
+│   ├── api/        # tRPC API server
+│   └── app/        # Next.js frontend application
+├── packages
+│   ├── shared/     # Shared types
+```
 
 ## Technologies Used
 
-- **Frontend**:
+- **Frontend (app)**:
 
-  - Next.js 15.1
-  - React 19
+  - Next.js
+  - React
   - TailwindCSS
   - shadcn/ui Components
   - TypeScript
+  - tRPC Client
 
-- **Backend**:
+- **Backend (api)**:
+  - tRPC Server
+  - Node.js
+  - TypeScript
   - Supabase (Database & Realtime subscriptions)
   - OpenAI SDK
 
@@ -38,12 +52,21 @@ cd basic_queue_app
 pnpm install
 ```
 
-3. Set up environment variables by creating a `.env.local` file:
+3. Set up environment variables:
+
+Create `.env` in the api directory (apps/api/.env):
 
 ```
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 OPENAI_API_KEY=your_openai_api_key
+PORT=5000
+```
+
+Create `.env.local` in the app directory (apps/app/.env.local):
+
+```
+NEXT_PUBLIC_TRPC_URL=http://localhost:5000
 ```
 
 ## Database Setup
@@ -73,24 +96,46 @@ alter table jobs replica identity full;
 
 ## Running the Project
 
-1. Start the development server:
+1. Start both the API and frontend development servers:
 
 ```bash
-pnpm dev
+pnpm turbo dev
 ```
+
+This command will start both the API server and Next.js frontend concurrently.
 
 2. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+Note: The API server will be running on port 5000 and the Next.js frontend on port 3000.
+
 ## Environment Variables
+
+### API Server
 
 | Variable            | Description                           |
 | ------------------- | ------------------------------------- |
 | `SUPABASE_URL`      | Your Supabase project URL             |
 | `SUPABASE_ANON_KEY` | Your Supabase project's anonymous key |
 | `OPENAI_API_KEY`    | Your OpenAI API key                   |
+| `PORT`              | tRPC server port (default: 4000)      |
+
+### Frontend App
+
+| Variable               | Description             |
+| ---------------------- | ----------------------- |
+| `NEXT_PUBLIC_TRPC_URL` | URL of your tRPC server |
 
 ## Important Notes
 
 - Make sure you have enabled the Realtime feature in your Supabase project settings
 - The application uses Supabase's Realtime functionality to update job statuses in real-time
+- The tRPC server must be running for the frontend to function properly
 - Ensure your Supabase database has the correct table structure and enum types as specified in the Database Setup section
+
+## Development
+
+To add new features:
+
+1. Define your types in the shared package
+2. Implement the tRPC procedure in the api server
+3. Use the type-safe tRPC client in your frontend components

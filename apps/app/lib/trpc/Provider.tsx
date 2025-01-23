@@ -8,6 +8,7 @@ import {
 import type React from "react";
 import { useState } from "react";
 import { trpc } from "./client";
+import { serverUrl } from "../constants";
 
 export default function Provider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({}));
@@ -17,10 +18,10 @@ export default function Provider({ children }: { children: React.ReactNode }) {
         splitLink({
           condition: (op) => op.type === "subscription",
           true: unstable_httpSubscriptionLink({
-            url: "http://localhost:3001",
+            url: serverUrl,
           }),
           false: httpBatchLink({
-            url: "http://localhost:3001",
+            url: serverUrl,
           }),
         }),
       ],

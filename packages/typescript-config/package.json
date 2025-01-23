@@ -1,0 +1,16 @@
+{
+  "name": "@repo/typescript-config",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "@trpc/client": "11.0.0-rc.711",
+    "@trpc/react-query": "11.0.0-rc.711",
+    "@trpc/server": "11.0.0-rc.711",
+    "typescript": "^5.7.2"
+  }
+}

@@ -30,14 +30,19 @@ export default function AppForm() {
     return completedCount * 25;
   }, [Object.values(results).map((r) => r.status)]);
 
-  trpc.progress.streamProgress.useSubscription(undefined, {
-    onData: (data) => {
-      setResults((prev) => ({
-        ...prev,
-        ...data,
-      }));
-    },
-  });
+  try {
+    trpc.progress.streamProgress.useSubscription(undefined, {
+      onData: (data) => {
+        setResults((prev) => ({
+          ...prev,
+          ...data,
+        }));
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    setError("Failed to stream progress");
+  }
 
   async function handleSubmit(formData: FormData) {
     try {

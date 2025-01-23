@@ -1,12 +1,16 @@
-import { DB_JOB_STATUS, JOB_STATUS } from "@shared/types";
+import { DB_JOB_STATUS, type Job, JOB_STATUS } from "@shared/types";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { supabase } from "../../supabase/supabase";
 import { publicProcedure, router } from "../trcp";
+import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 
 export const progressRouter = router({
 	getProgress: publicProcedure.query(async ({ ctx }) => {
-		const { data, error } = await supabase.from("jobs").select("*");
+		const { data, error } = await supabase
+			.from("jobs")
+			.select("*")
+			.returns<Job[]>();
 
 		if (error) {
 			throw new TRPCError({
@@ -38,20 +42,42 @@ export const progressRouter = router({
 						"postgres_changes",
 						{ event: "UPDATE", schema: "public", table: "jobs" },
 						(payload) => {
-							if (payload.new.status === DB_JOB_STATUS.COMPLETED) {
-								emit.next({
-									[payload.new.operation]: {
-										result: payload.new.result,
-										status: JOB_STATUS.COMPLETED,
-									},
-								});
+							try {
+								if (payload.new.status === DB_JOB_STATUS.COMPLETED) {
+									emit.next({
+										[payload.new.operation]: {
+											result: payload.new.result,
+											status: JOB_STATUS.COMPLETED,
+										},
+									});
+								}
+							} catch (error) {
+								emit.error(
+									error instanceof Error
+										? error
+										: new Error("Subscription error"),
+								);
 							}
 						},
 					)
-					.subscribe();
+					.subscribe((status, error) => {
+						if (status === REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR) {
+							emit.error(
+								error instanceof Error
+									? error
+									: new Error("Subscription error"),
+							);
+						}
+					});
+
+				const timeout = setTimeout(() => {
+					emit.error(new Error("Subscription timeout"));
+					channel.unsubscribe();
+				}, 30000); // 30s timeout
 
 				// Cleanup function
 				return () => {
+					clearTimeout(timeout);
 					channel.unsubscribe();
 				};
 			},

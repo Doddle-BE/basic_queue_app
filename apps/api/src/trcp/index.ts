@@ -23,7 +23,6 @@ const server = createHTTPServer({
 	}),
 	router: appRouter,
 	createContext,
-	maxBodySize: Number.POSITIVE_INFINITY,
 });
 
 server.listen(process.env.PORT || 5000);

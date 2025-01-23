@@ -65,42 +65,85 @@ export const workerRouter = router({
 			}),
 		)
 		.mutation(async ({ input, ctx }) => {
-			let job: Job | null = null;
 			const { jobId } = input;
 
-			const { data: fetchedJob } = await supabase
-				.from("jobs")
-				.select()
-				.eq("id", jobId)
-				.single();
+			try {
+				const { data: fetchedJob, error: fetchError } = await supabase
+					.from("jobs")
+					.select()
+					.eq("id", jobId)
+					.single();
 
-			if (!fetchedJob) {
+				if (fetchError || !fetchedJob) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Job not found",
+					});
+				}
+				if (fetchedJob.status !== DB_JOB_STATUS.PENDING) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: `Job already ${fetchedJob.status.toLowerCase()}`,
+					});
+				}
+
+				const { error: updateError } = await supabase
+					.from("jobs")
+					.update({ status: DB_JOB_STATUS.PROCESSING })
+					.eq("id", jobId);
+
+				if (updateError) {
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message: "Failed to update job status",
+					});
+				}
+
+				await new Promise((resolve) => setTimeout(resolve, 3000));
+
+				let result: Awaited<ReturnType<typeof openai.doCalculation>>;
+				try {
+					result = await openai.doCalculation({
+						number_a: fetchedJob.number_a,
+						number_b: fetchedJob.number_b,
+						operation: fetchedJob.operation,
+					});
+				} catch (error) {
+					await supabase
+						.from("jobs")
+						.update({ status: DB_JOB_STATUS.FAILED })
+						.eq("id", jobId);
+
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message: "Calculation failed",
+						cause: error,
+					});
+				}
+
+				const { error: finalUpdateError } = await supabase
+					.from("jobs")
+					.update({ status: DB_JOB_STATUS.COMPLETED, result })
+					.eq("id", jobId);
+
+				if (finalUpdateError) {
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message: "Failed to update job result",
+					});
+				}
+
+				return { message: "Job completed", result };
+			} catch (error) {
+				if (error instanceof TRPCError) {
+					throw error;
+				}
+
 				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Job not found",
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Unknown error occurred",
+					cause: error,
 				});
 			}
-
-			await supabase
-				.from("jobs")
-				.update({ status: DB_JOB_STATUS.PROCESSING })
-				.eq("id", jobId);
-
-			await new Promise((resolve) => setTimeout(resolve, 3000));
-
-			job = fetchedJob;
-
-			const result = await openai.doCalculation({
-				number_a: job.number_a,
-				number_b: job.number_b,
-				operation: job.operation,
-			});
-
-			await supabase
-				.from("jobs")
-				.update({ status: DB_JOB_STATUS.COMPLETED, result })
-				.eq("id", jobId);
-
-			return { message: "Job completed", result };
 		}),
 });

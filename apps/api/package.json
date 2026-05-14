@@ -10,12 +10,12 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"@supabase/supabase-js": "^2.47.14",
+		"@supabase/supabase-js": "^2.105.4",
 		"@trpc/server": "11.0.0-rc.711",
 		"@types/ws": "^8.5.13",
 		"cors": "^2.8.5",
 		"dotenv": "^16.4.7",
-		"openai": "^4.79.4",
+		"openai": "^4.104.0",
 		"ws": "^8.18.0",
 		"zod": "^3.24.1"
 	},
